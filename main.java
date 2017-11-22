@@ -57,13 +57,10 @@ public class main {
       label = sc.next();
       label = sc.next();
 
-      System.out.println("Gender\tWeight\tHeight");
-
       //Read all the data into the 3 lists
       while(sc.hasNext()) {
 
         dataS = sc.next();
-        System.out.print(dataS + " ");
 
         //Check for missing data, if data is missing place null at position
         if(!dataS.equals("-")) {
@@ -79,16 +76,13 @@ public class main {
         }
         //read data for Weight
         dataS = sc.next();
-        System.out.print(dataS + " ");
         weight=  Integer.parseInt(dataS);
         weightTable.add(weight);
         //read data for Height
         dataS = sc.next();
-        System.out.print(dataS + " ");
         height =  Integer.parseInt(dataS);
         heightTable.add(height);
 
-        System.out.println();
         totalC++;
       }
 
@@ -97,7 +91,7 @@ public class main {
       System.err.println("Caught Exception: " + e.getMessage());
     }
 
-    float log_likelihood_prev = 0f, log_likelihood_curr = 0f, changeInLikelihood;
+    float log_likelihood_prev = 0f, log_likelihood_curr = 0f, likelihood, changeInLikelihood;
 
     model EM_model = new model();
     float prob;
@@ -113,6 +107,7 @@ public class main {
       System.err.println("Caught IOException: " + e.getMessage());
     }
 
+    float debug1, debug2;
     do {
 
       System.out.print("Indexes of missing data: ");
@@ -178,21 +173,29 @@ public class main {
 
       log_likelihood_prev = log_likelihood_curr;
       log_likelihood_curr = 0;
+      likelihood = 1f;
       //find the likelihood of the model
       for(int i = 0; i < genderTable.size(); i++) {
         if(genderTable.get(i) == null) {
-          log_likelihood_curr += Math.abs(Math.log(EM_model.getGWH(0,weightTable.get(i), heightTable.get(i)) + EM_model.getGWH(1, weightTable.get(i), heightTable.get(i))));
+          System.out.println("P(G=0|WH) = " + EM_model.getGWH(0,weightTable.get(i), heightTable.get(i)));
+          System.out.println("P(G=1|WH) = " + EM_model.getGWH(1,weightTable.get(i), heightTable.get(i)));
+          likelihood *= EM_model.getGWH(0,weightTable.get(i), heightTable.get(i)) + EM_model.getGWH(1, weightTable.get(i), heightTable.get(i));
+          System.out.println("likelihood = " + EM_model.getGWH(0,weightTable.get(i), heightTable.get(i)) + EM_model.getGWH(1, weightTable.get(i), heightTable.get(i)));
         } else {
-          log_likelihood_curr += Math.abs(Math.log(EM_model.getGWH(genderTable.get(i), weightTable.get(i), heightTable.get(i))));
+          System.out.println("P(G|WH) = " + EM_model.getGWH(genderTable.get(i),weightTable.get(i), heightTable.get(i)));
+          likelihood *= EM_model.getGWH(genderTable.get(i), weightTable.get(i), heightTable.get(i));
+          System.out.println("likelihood = " + EM_model.getGWH(genderTable.get(i), weightTable.get(i), heightTable.get(i)));
         }
+        System.out.println("Production of Log(likelihood) = " + likelihood);
       }
-      System.out.println("Sum of log likelihood = " + log_likelihood_curr);
+      log_likelihood_curr = (float) Math.log(likelihood);
+      System.out.println("Log of production of likelihood = " + log_likelihood_curr);
       System.out.println("previous likelihood = " + log_likelihood_prev);
       changeInLikelihood = Math.abs(log_likelihood_curr - log_likelihood_prev);
       System.out.println("Change in likelihood = " + changeInLikelihood);
       iteration++;
       try {
-        bw.write(log_likelihood_curr + "\t" + iteration);
+        bw.write(iteration + "\t" + log_likelihood_curr);
         bw.newLine();
         bw.flush();
       } catch (Exception e) {
@@ -202,7 +205,7 @@ public class main {
       // if(iteration == 3) {
       //   break;
       // }
-    } while(changeInLikelihood > .0001f);
+    } while(changeInLikelihood > .001f);
 
     try {
       bw.close();
@@ -252,13 +255,13 @@ class model {
     G[0] = .7f;
     G[1] = 1-G[0];
     W_G[0][0] = .8f;
-    W_G[0][1] = 1-W_G[0][0];
-    W_G[1][0] = .2f;
-    W_G[1][1] = 1-W_G[1][0];
+    W_G[0][1] = .4f;
+    W_G[1][0] = 1-W_G[0][0];
+    W_G[1][1] = 1-W_G[0][1];
     H_G[0][0] = .7f;
-    H_G[0][1] = 1-H_G[0][0];
-    H_G[1][0] = .3f;
-    H_G[1][1] = 1-H_G[1][0];
+    H_G[0][1] = .3f;
+    H_G[1][0] = 1-H_G[0][0];
+    H_G[1][1] = 1-H_G[0][1];
 
     System.out.println("Starting Parameters:");
     this.printModel();

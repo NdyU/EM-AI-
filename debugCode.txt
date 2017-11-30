@@ -122,15 +122,23 @@ public class main {
     }
 
     do {
-      iteration++;
-      System.out.println("iteration: " + iteration);
 
+      System.out.print("Indexes of missing data: ");
       //Loop through the missing list and estimate the probability of the missing data
       for(int i = 0; i < missingIndex.size(); i++) {
         index = missingIndex.get(i);
+        System.out.print(index + " , ");
         // (g_val, w_val, h_val)
         prob = EM_model.getG_WH(0, weightTable.get(index), heightTable.get(index));
         probRow.set(index, prob);
+      }
+
+      System.out.println();
+
+      System.out.println("Table after 1 iteration");
+      for(int i = 0; i < genderTable.size(); i++) {
+        System.out.println("Gender\tWeight\tHeight\tProb");
+        System.out.println(genderTable.get(i) + "\t" + weightTable.get(i) + "\t" + heightTable.get(i) + "\t" + probRow.get(i));
       }
 
       //Count
@@ -183,27 +191,33 @@ public class main {
       //find the likelihood of the model
       for(int i = 0; i < genderTable.size(); i++) {
         if(genderTable.get(i) == null) {
+          // System.out.println("P(G=0WH) = " + EM_model.getGWH(0,weightTable.get(i), heightTable.get(i)));
+          // System.out.println("P(G=1WH) = " + EM_model.getGWH(1,weightTable.get(i), heightTable.get(i)));
           // Find the probability of the missing data for gender, and multiply by the accumated probability
           // Σ P(GWH);
           // G
           likelihood *= EM_model.getGWH(0,weightTable.get(i), heightTable.get(i)) + EM_model.getGWH(1, weightTable.get(i), heightTable.get(i));
+          System.out.println(" Σ P(GWH) = " + EM_model.getGWH(0,weightTable.get(i), heightTable.get(i)) + EM_model.getGWH(1, weightTable.get(i), heightTable.get(i)));
         } else {
+          // System.out.println("P(GWH) = " + EM_model.getGWH(genderTable.get(i),weightTable.get(i), heightTable.get(i)));
           // Find the likelihood of the given data for gender, and multuply by the accumated probability
           // P(GWH)
           //
           // Since the genderTable only stores 0 or null, to detect if the value of g is a 1, we check if the probability is 0
           // reference to call: Math.round(probRow.get(i))^1
           likelihood *= EM_model.getGWH(Math.round(probRow.get(i))^1, weightTable.get(i), heightTable.get(i));
+          System.out.println("P(GWH) = " + EM_model.getGWH(Math.round(probRow.get(i))^1, weightTable.get(i), heightTable.get(i)));
         }
+        System.out.println("Tracking the product of P(GWH) = " + likelihood);
       }
       //Compute the log of the likelihood
       log_likelihood_curr = (float) Math.log(likelihood);
-      System.out.println("Log of likelihood = " + log_likelihood_curr);
+      System.out.println("Log of production of likelihood = " + log_likelihood_curr);
       System.out.println("previous likelihood = " + log_likelihood_prev);
       //Compute the difference of the previous and the current log likelihood
       changeInLikelihood = Math.abs(log_likelihood_curr - log_likelihood_prev);
       System.out.println("Change in likelihood = " + changeInLikelihood);
-      System.out.println();
+      iteration++;
       try {
         bw.write(iteration + "\t" + log_likelihood_curr);
         bw.newLine();
@@ -211,6 +225,7 @@ public class main {
       } catch (Exception e) {
         System.out.println("Error while writing to file" + likelihoodFile);
       }
+
     } while(changeInLikelihood > .001f);  //set a treshold on the change in likelihood to explictly terminate the program.
 
     try {
@@ -218,8 +233,34 @@ public class main {
     } catch (Exception e) {
       System.out.println("Error when closing file stream" + likelihoodFile);
     }
+
+    System.out.println("Number of iterations: " + iteration);
   }
 }
+
+//Class for probability
+// class probNode {
+//   float[] prob;
+//   boolean flag;
+//   public probNode(int label, float prob) {
+//     this.prob = new FLOAT[2]();
+//     this.prob[label][prob];
+//     flag = false;
+//   }
+//
+//   //Assign the probability to the label
+//   public void setProb(int label, int prob) {
+//     this.prob[label] = prob;
+//   }
+//
+//   public void setEvaluation() {
+//     flag = true;
+//   }
+//
+//   public boolean needEvaluation() {
+//     return flag;
+//   }
+// }
 
 class model {
   //initial parameters
@@ -232,14 +273,14 @@ class model {
     W_G = new Float[2][2];
     H_G = new Float[2][2];
 
-    G[0] = .7f;
+    G[0] = .5f;
     G[1] = 1-G[0];
-    W_G[0][0] = .8f;
-    W_G[0][1] = .4f;
+    W_G[0][0] = .5f;
+    W_G[0][1] = .5f;
     W_G[1][0] = 1-W_G[0][0];
     W_G[1][1] = 1-W_G[0][1];
-    H_G[0][0] = .7f;
-    H_G[0][1] = .3f;
+    H_G[0][0] = .5f;
+    H_G[0][1] = .5f;
     H_G[1][0] = 1-H_G[0][0];
     H_G[1][1] = 1-H_G[0][1];
 
